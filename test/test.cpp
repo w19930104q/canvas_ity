@@ -419,6 +419,59 @@ void set_transform( canvas &that, float width, float height )
                            width * 0.5f, height * 0.5f );
 }
 
+void singular_transform( canvas &that, float width, float height )
+{
+    // Draw under singular, near-singular, and extreme transforms.  None of
+    // this may paint anything or disturb any canvas state.
+    that.save();
+    that.scale( 0.0f, 0.0f );
+    that.set_color( fill_style, 0.0f, 1.0f, 0.0f, 1.0f );
+    that.begin_path();
+    that.rectangle( 0.0f, 0.0f, width, height );
+    that.clip();
+    that.fill();
+    that.stroke();
+    that.fill_rectangle( 0.0f, 0.0f, width, height );
+    that.stroke_rectangle( 0.0f, 0.0f, width, height );
+    that.clear_rectangle( 0.0f, 0.0f, width, height );
+    that.restore();
+    that.set_transform( 0.0f, 0.0f, 0.0f, 0.0f,
+                        width * 0.5f, height * 0.5f );
+    that.fill_rectangle( 0.0f, 0.0f, width, height );
+    that.set_transform( 1.0f, 0.0f, 0.0f, 1.0f, 0.0f, 0.0f );
+    that.save();
+    that.scale( 1.0e30f, 1.0e30f );
+    that.fill_rectangle( 0.0f, 0.0f, width, height );
+    that.restore();
+    that.save();
+    that.scale( 1.0e-20f, 1.0e-20f );
+    that.fill_rectangle( 0.0f, 0.0f, width, height );
+    that.restore();
+    that.begin_path();
+    that.move_to( 0.0f, 0.0f );
+    that.arc_to( width * 0.5f, height * 0.5f, width, height, 8.0f );
+    that.scale( 0.0f, 1.0f );
+    that.arc_to( width * 0.5f, height * 0.5f, width, height, 8.0f );
+    that.set_transform( 1.0f, 0.0f, 0.0f, 1.0f, 0.0f, 0.0f );
+    // Clip under a singular transform without saving, then recover the
+    // identity transform; the clip must not leave the region emptied.
+    that.scale( 0.0f, 0.0f );
+    that.begin_path();
+    that.rectangle( 0.0f, 0.0f, width, height );
+    that.clip();
+    that.set_transform( 1.0f, 0.0f, 0.0f, 1.0f, 0.0f, 0.0f );
+    // The state should now be completely clean; draw normally.
+    that.set_color( fill_style, 1.0f, 0.0f, 0.0f, 1.0f );
+    that.fill_rectangle( width * 0.25f, height * 0.25f,
+                         width * 0.5f, height * 0.5f );
+    that.set_color( stroke_style, 0.0f, 0.0f, 1.0f, 1.0f );
+    that.set_line_width( 4.0f );
+    that.begin_path();
+    that.arc( width * 0.5f, height * 0.5f,
+              min( width, height ) * 0.3f, 0.0f, 6.28318531f );
+    that.stroke();
+}
+
 void global_alpha( canvas &that, float width, float height )
 {
     that.set_color( stroke_style, 0.0f, 0.0f, 0.0f, 1.0f );
@@ -2191,6 +2244,7 @@ struct test
     { 0x98f5594a, 256, 256, transform_fill, "transform_fill" },
     { 0x822964b0, 256, 256, transform_stroke, "transform_stroke" },
     { 0xb7056a3a, 256, 256, set_transform, "set_transform" },
+    { 0x3b200b35, 256, 256, singular_transform, "singular_transform" },
     { 0x8f6dd6c3, 256, 256, global_alpha, "global_alpha" },
     { 0x98a0609d, 256, 256, global_composite_operation, "global_composite_operation" },
     { 0x9def5b00, 256, 256, shadow_color, "shadow_color" },

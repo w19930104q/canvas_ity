@@ -254,6 +254,63 @@ to see how the HTML5 API maps to the library's API and vice-versa.</p>
 </div>
 
 <div>
+<h2>singular_<wbr>transform</h2>
+<canvas id="singular_transform" width="256" height="256"></canvas>
+<script type="text/javascript">
+    window.addEventListener( "load", function( event ) {
+        const element = document.getElementById( "singular_transform" );
+        const that = element.getContext( "2d" );
+        const width = element.width;
+        const height = element.height;
+        that.save();
+        that.scale( 0.0, 0.0 );
+        that.fillStyle = "#00ff00";
+        that.beginPath();
+        that.rect( 0.0, 0.0, width, height );
+        that.clip();
+        that.fill();
+        that.stroke();
+        that.fillRect( 0.0, 0.0, width, height );
+        that.strokeRect( 0.0, 0.0, width, height );
+        that.clearRect( 0.0, 0.0, width, height );
+        that.restore();
+        that.setTransform( 0.0, 0.0, 0.0, 0.0,
+                           width * 0.5, height * 0.5 );
+        that.fillRect( 0.0, 0.0, width, height );
+        that.setTransform( 1.0, 0.0, 0.0, 1.0, 0.0, 0.0 );
+        that.save();
+        that.scale( 1.0e30, 1.0e30 );
+        that.fillRect( 0.0, 0.0, width, height );
+        that.restore();
+        that.save();
+        that.scale( 1.0e-20, 1.0e-20 );
+        that.fillRect( 0.0, 0.0, width, height );
+        that.restore();
+        that.beginPath();
+        that.moveTo( 0.0, 0.0 );
+        that.arcTo( width * 0.5, height * 0.5, width, height, 8.0 );
+        that.scale( 0.0, 1.0 );
+        that.arcTo( width * 0.5, height * 0.5, width, height, 8.0 );
+        that.setTransform( 1.0, 0.0, 0.0, 1.0, 0.0, 0.0 );
+        that.scale( 0.0, 0.0 );
+        that.beginPath();
+        that.rect( 0.0, 0.0, width, height );
+        that.clip();
+        that.setTransform( 1.0, 0.0, 0.0, 1.0, 0.0, 0.0 );
+        that.fillStyle = "#ff0000";
+        that.fillRect( width * 0.25, height * 0.25,
+                       width * 0.5, height * 0.5 );
+        that.strokeStyle = "#0000ff";
+        that.lineWidth = 4.0;
+        that.beginPath();
+        that.arc( width * 0.5, height * 0.5,
+                  Math.min( width, height ) * 0.3, 0.0, 6.28318531 );
+        that.stroke();
+    } );
+</script>
+</div>
+
+<div>
 <h2>global_<wbr>alpha</h2>
 <canvas id="global_alpha" width="256" height="256"></canvas>
 <script type="text/javascript">

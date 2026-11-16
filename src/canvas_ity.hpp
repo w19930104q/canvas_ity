@@ -820,7 +820,8 @@ public:
     /// only reduce this further.  When filling or stroking, only pixels
     /// within the current clip region will change.  The current path is
     /// left unchanged by updating the clip region; begin a new path to
-    /// clear it.  Defaults to the entire canvas.
+    /// clear it.  Defaults to the entire canvas.  If the current transform
+    /// is not invertible, this does nothing.
     ///
     /// Tip: to be able to reset the current clip region, save the canvas
     ///      state first before clipping then restore the state to reset it.
@@ -1215,6 +1216,7 @@ private:
 
 #include <algorithm>
 #include <cmath>
+#include <limits>
 #include <numeric>
 
 namespace canvas_ity
@@ -1240,6 +1242,18 @@ static xy const operator*( affine_matrix const &left, xy right ) {
                left.b * right.x + left.d * right.y + left.f ); }
 static float dot( xy left, xy right ) {
     return left.x * right.x + left.y * right.y; }
+
+// Check whether an affine transform matrix is invertible in practice.  This
+// rejects not only exactly singular matrices (those with a determinant of
+// zero) but also matrices so extreme that either the determinant or its
+// reciprocal overflows or underflows to a non-finite value, since the
+// inverse matrix would then have non-finite entries.  Drawing operations
+// treat all such matrices as though they were singular and do nothing.
+static bool invertible( affine_matrix const &matrix ) {
+    static float const maximum = std::numeric_limits< float >::max();
+    float determinant = matrix.a * matrix.d - matrix.b * matrix.c;
+    return fabsf( determinant ) <= maximum &&
+           fabsf( 1.0f / determinant ) <= maximum; }
 static float length( xy that ) {
     return sqrtf( dot( that, that ) ); }
 static float direction( xy that ) {
@@ -2069,7 +2083,7 @@ void canvas::add_half_stroke(
 //
 void canvas::stroke_lines()
 {
-    if ( forward.a * forward.d - forward.b * forward.c == 0.0f )
+    if ( !invertible( forward ) )
         return;
     dash_lines();
     lines.points.swap( scratch.points );
@@ -2551,7 +2565,7 @@ void canvas::render_shadow(
 void canvas::render_main(
     paint_brush const &brush )
 {
-    if ( forward.a * forward.d - forward.b * forward.c == 0.0f )
+    if ( !invertible( forward ) )
         return;
     render_shadow( brush );
     lines_to_runs( xy( 0.0f, 0.0f ), 0 );
@@ -2700,12 +2714,18 @@ void canvas::set_transform(
     float e,
     float f )
 {
-    float determinant = a * d - b * c;
-    float scaling = determinant != 0.0f ? 1.0f / determinant : 0.0f;
     affine_matrix new_forward = { a, b, c, d, e, f };
-    affine_matrix new_inverse = {
-        scaling * d, scaling * -b, scaling * -c, scaling * a,
-        scaling * ( c * f - d * e ), scaling * ( b * e - a * f ) };
+    affine_matrix new_inverse = { 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f };
+    if ( invertible( new_forward ) )
+    {
+        float scaling = 1.0f / ( a * d - b * c );
+        new_inverse.a = scaling * d;
+        new_inverse.b = scaling * -b;
+        new_inverse.c = scaling * -c;
+        new_inverse.d = scaling * a;
+        new_inverse.e = scaling * ( c * f - d * e );
+        new_inverse.f = scaling * ( b * e - a * f );
+    }
     forward = new_forward;
     inverse = new_inverse;
 }
@@ -2961,8 +2981,7 @@ void canvas::arc_to(
     float y,
     float radius )
 {
-    if ( radius < 0.0f ||
-         forward.a * forward.d - forward.b * forward.c == 0.0f )
+    if ( radius < 0.0f || !invertible( forward ) )
         return;
     if ( path.subpaths.empty() )
         move_to( vertex_x, vertex_y );
@@ -3056,6 +3075,8 @@ void canvas::stroke()
 
 void canvas::clip()
 {
+    if ( !invertible( forward ) )
+        return;
     path_to_lines( false );
     lines_to_runs( xy( 0.0f, 0.0f ), 0 );
     size_t part = runs.size();
